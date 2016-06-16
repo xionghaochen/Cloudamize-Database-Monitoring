@@ -667,16 +667,16 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
         if target=='function':
             for s_s in S_schema:
                 t=[[s_s]]
-                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,s_s)
+                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
                 
                 if not judge:
                     count=count+1
                 
                 for s_t in S_schema_table:
-                    if specified_check(cursor1,cursor2,dbname1,dbname2,s_s[0],choose_function=s_t[0]):
+                    if specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
                         continue
                     else:
-                        print('The function \'%s.%s\' in those two databases are not match\n'%(s_s[0],s_t[0]))
+                        print('The function \'%s.%s\' in those two databases are not match\n'%(t,s_t[0]))
                         count=count+1
         elif target=='view':
             for s_s in S_schema:
@@ -687,10 +687,10 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
                     count=count+1
                 
                 for s_t in S_schema_table:
-                    if specified_check(cursor1,cursor2,dbname1,dbname2,s_s[0],choose_function=s_t[0]):
+                    if specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
                         continue
                     else:
-                        print('The view \'%s.%s\' in those two databases are not match\n'%(s_s[0],s_t[0]))
+                        print('The view \'%s.%s\' in those two databases are not match\n'%(t,s_t[0]))
                         count=count+1
                     
 #     elif ANOTHER PART
