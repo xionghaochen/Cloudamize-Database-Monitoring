@@ -389,7 +389,8 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
             count=count+1
             
         for s_s in S_schema:
-            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,S_schema)
+            t=[[s_s]]
+            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
             
             if not judge:
                 count=count+1
@@ -432,7 +433,8 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
             count=count+1
                         
         for s_s in S_schema:
-            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,S_schema)
+            t=[[s_s]]
+            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
             
             if not judge:
                 count=count+1
@@ -464,8 +466,8 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
     if len(s_schema)!=len(c_schema):
         schema_count=schema_count+1
         print('The number of schemas in those two databases are not matching\n')
-    else:
-        print('The number of schemas in those two databases are matching\n')
+#     else:
+#         print('The number of schemas in those two databases are matching\n')
         
     while True:
         while s_schema_number<len(s_schema):
@@ -481,16 +483,18 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
                 elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)<len(s_schema):
                     schema_count=schema_count+1
                     print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
-                    s_schema.pop(s_schema_number)
-#                     s_schema_number=s_schema_number+1
+#                     s_schema.pop(s_schema_number)
+                    s_schema_number=s_schema_number+1
                     c_schema_number=0
                 elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)>=len(s_schema):
                     schema_count=schema_count+1
                     print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
-                    s_schema.pop(s_schema_number)
+#                     s_schema.pop(s_schema_number)
                     s_schema_number,c_schema_number=0,0
                     break
             break
+        
+        s_schema_number,c_schema_number=0,0
         
         while c_schema_number<len(c_schema):
             while s_schema_number<len(s_schema):
@@ -519,10 +523,10 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
         
     if schema_count==0:
         print('The schemas of those two databases are matching\n')
-        return s_schema,True
+        return c_schema,True
     else:
         print('The schemas of those two databases are not matching\n')
-        return s_schema,False
+        return c_schema,False
 
 def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
     
@@ -556,8 +560,8 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
         if len(s_schema_table)!=len(c_schema_table):
             print('The number of tables in schema %r are not matching \n'%s[0])
             count=count+1
-        else:
-            print('The number of tables in schema %r are matching \n'%s[0])
+#         else:
+#             print('The number of tables in schema %r are matching \n'%s[0])
             
         while True:
             while s_schema_table_number<len(s_schema_table):
@@ -573,16 +577,17 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
                     elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)<len(s_schema_table):
                         schema_table_count=schema_table_count+1
                         print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
-                        s_schema_table.pop(s_schema_table_number)
-#                         s_schema_table_number=s_schema_table_number+1
+#                         s_schema_table.pop(s_schema_table_number)
+                        s_schema_table_number=s_schema_table_number+1
                         c_schema_table_number=0
                     elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)>=len(s_schema_table):
                         schema_table_count=schema_table_count+1
                         print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
-                        s_schema_table.pop(s_schema_table_number)
+#                         s_schema_table.pop(s_schema_table_number)
                         s_schema_table_number,c_schema_table_number=0,0
                         break
                 break
+            s_schema_table_number,c_schema_table_number=0,0
             
             while c_schema_table_number<len(c_schema_table):
                 while s_schema_table_number<len(s_schema_table):
@@ -615,11 +620,11 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
         
     
     if count==0:
-        print('The structure of schemas in those two databases are matching\n')
-        return s_schema_table,True
+#         print('The structure of schemas in those two databases are matching\n')
+        return c_schema_table,True
     else:
         print('The structure of schemas in those two databases are not matching\n')
-        return s_schema_table,False
+        return c_schema_table,False
 
 
 def specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function='',choose_view=''):
@@ -661,7 +666,8 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
             
         if target=='function':
             for s_s in S_schema:
-                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,S_schema)
+                t=[[s_s]]
+                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,s_s)
                 
                 if not judge:
                     count=count+1
@@ -674,7 +680,8 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
                         count=count+1
         elif target=='view':
             for s_s in S_schema:
-                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,S_schema)
+                t=[[s_s]]
+                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
                 
                 if not judge:
                     count=count+1
