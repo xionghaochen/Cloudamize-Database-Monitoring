@@ -166,46 +166,45 @@ def table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
     if c_columns!=s_columns:
         print('In table \'%s.%s\', the number of columns are not match!\n'%(choose_schema,choose_table))
     
-    while True:
-        while x<len(s_columns_infor):
-            while i<len(c_columns_infor):
-                while count<len(c_columns_infor[0]):
-                    if s_columns_infor[x][count]==c_columns_infor[i][count]:
-                        break
+    while x<len(s_columns_infor):
+        while i<len(c_columns_infor):
+            while count<len(c_columns_infor[0]):
+                if s_columns_infor[x][count]==c_columns_infor[i][count]:
+                    break
+                else:
+                    break
+            if s_columns_infor[x][count]==c_columns_infor[i][count] and (count+1)<len(c_columns_infor[0]):
+                count=count+1
+            elif s_columns_infor[x][count]==c_columns_infor[i][count] and (count+1)>=len(c_columns_infor[0]):
+                if (x+1)<len(s_columns_infor):
+                    x=x+1
+                    i=0
+                    count=0
+                else:
+                    if sign==0:
+#                             print('The schema of table \'%s.%s\' in those two databases are completely matching\n'%(choose_schema,choose_table))
+                        return True
                     else:
-                        break
-                if s_columns_infor[x][count]==c_columns_infor[i][count] and (count+1)<len(c_columns_infor[0]):
-                    count=count+1
-                elif s_columns_infor[x][count]==c_columns_infor[i][count] and (count+1)>=len(c_columns_infor[0]):
+                        print('The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
+                        return False
+            elif s_columns_infor[x][count]!=c_columns_infor[i][count]:
+                if (i+1)<len(c_columns_infor):
+                    i=i+1
+                    count=0
+                else:
+                    print('There is no match column ',s_columns_infor[x],' in table \'%s.%s\'\n'%(choose_schema,choose_table))
+                    sign=sign+1
                     if (x+1)<len(s_columns_infor):
                         x=x+1
                         i=0
                         count=0
                     else:
                         if sign==0:
-                            print('The schema of table \'%s.%s\' in those two databases are completely matching\n'%(choose_schema,choose_table))
+#                                 print('\nThe schema of table \'%s.%s\' in those two databases are completely matching'%(choose_schema,choose_table))
                             return True
                         else:
-                            print('The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
+                            print('\nThe schema of table \'%s.%s\' in those two databases are not completely matching'%(choose_schema,choose_table))
                             return False
-                elif s_columns_infor[x][count]!=c_columns_infor[i][count]:
-                    if (i+1)<len(c_columns_infor):
-                        i=i+1
-                        count=0
-                    else:
-                        print('There is no match column ',s_columns_infor[x],' in table \'%s.%s\'\n'%(choose_schema,choose_table))
-                        sign=sign+1
-                        if (x+1)<len(s_columns_infor):
-                            x=x+1
-                            i=0
-                            count=0
-                        else:
-                            if sign==0:
-                                print('\nThe schema of table \'%s.%s\' in those two databases are completely matching'%(choose_schema,choose_table))
-                                return True
-                            else:
-                                print('\nThe schema of table \'%s.%s\' in those two databases are not completely matching'%(choose_schema,choose_table))
-                                return False
 
 def table_content_compare(choose_schema,choose_table,cursor1,cursor2,dbname1,dbname2):
     
@@ -224,19 +223,131 @@ def table_content_compare(choose_schema,choose_table,cursor1,cursor2,dbname1,dbn
     
     x,i,sign,s_count,c_count=0,0,0,0,0
     
-    while True:
-        if len(s_data)!=len(c_data):
-            sign=sign+1
-            print('\nThe number of records in table \'%s.%s\' are not match'%(choose_schema,choose_table))
+    if len(s_data)!=len(c_data):
+        sign=sign+1
+        print('\nThe number of records in table \'%s.%s\' are not match'%(choose_schema,choose_table))
+    else:
+        print('\nThe number of records in table \'%s.%s\' are match'%(choose_schema,choose_table))
+    
+    if len(s_colnames)==1 and s_colnames[0]=='id':
+        sign=sign+1
+        print('\nThe table \'%s.%s\' only has one column'%(choose_schema,choose_table))
+    elif len(s_colnames)==1 and s_colnames[0]!='id':
+        s_count,c_count=0,0
+    elif len(s_colnames)>1:
+        for s in s_colnames:
+            if s=='id':
+                s_count,c_count=1,1
+                break
+            else:
+                s_count,c_count=0,0
+
+    while x<len(s_data):
+        while i<len(c_data):
+            while s_count<len(s_colnames) and c_count<len(c_colnames):
+                if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)<len(s_colnames):
+                    s_count=s_count+1
+                    c_count=1
+                elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)>=len(s_colnames):
+                    break
+                elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count]:
+                    if (i+1)<len(c_data):
+                        break
+                    else:
+                        sign=sign+1
+                        print('\nFor database %r, there is no matching record: %r'%(dbname2,s_data[x]))
+                        break
+                else:
+                    c_count=c_count+1
+            if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)>=len(s_colnames):
+                break
+            elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (i+1)>=len(c_data):
+                break
+            elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (i+1)<len(c_data):
+                i=i+1
+                if len(s_colnames)==1 and s_colnames[0]!='id':
+                    s_count,c_count=0,0
+                elif len(s_colnames)>1:
+                    for s in s_colnames:
+                        if s=='id':
+                            s_count,c_count=1,1
+                            break
+                        else:
+                            s_count,c_count=0,0
+            else:
+                break
+        if (x+1)<len(s_data):
+            x=x+1
+            i=0
+            if len(s_colnames)==1 and s_colnames[0]!='id':
+                s_count,c_count=0,0
+            elif len(s_colnames)>1:
+                for s in s_colnames:
+                    if s=='id':
+                        s_count,c_count=1,1
+                        break
+                    else:
+                        s_count,c_count=0,0
         else:
-            print('\nThe number of records in table \'%s.%s\' are match'%(choose_schema,choose_table))
-        
-        while True:
-            if len(s_colnames)==1 and s_colnames[0]=='id':
-                sign=sign+1
-                print('\nThe table \'%s.%s\' only has one column'%(choose_schema,choose_table))
+            if sign==0:
+                print('\nFor database %r, those two tables might be matching'%dbname1)
                 break
-            elif len(s_colnames)==1 and s_colnames[0]!='id':
+            else:
+                break
+    
+    x,i=0,0
+    
+    if len(s_colnames)==1 and s_colnames[0]=='id':
+        sign=sign+1
+        print('\nThe table \'%s.%s\' only has one column'%(choose_schema,choose_table))
+    elif len(s_colnames)==1 and s_colnames[0]!='id':
+        s_count,c_count=0,0
+    elif len(s_colnames)>1:
+        for s in s_colnames:
+            if s=='id':
+                s_count,c_count=1,1
+                break
+            else:
+                s_count,c_count=0,0
+                
+    while i<len(c_data):
+        while x<len(s_data):
+            while s_count<len(s_colnames) and c_count<len(c_colnames):
+                if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)<len(c_colnames):
+                    c_count=c_count+1
+                    s_count=1
+                elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)>=len(c_colnames):
+                    break
+                elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count]:
+                    if (x+1)<len(s_data):
+                        break
+                    else:
+                        sign=sign+1
+                        print('\nFor database %r, there is no matching record: %r'%(dbname1,c_data[i]))
+                        break
+                else:
+                    s_count=s_count+1
+            if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)>=len(c_colnames):
+                break
+            elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (x+1)>=len(s_data):
+                break
+            elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (x+1)<len(s_data):
+                x=x+1
+                if len(s_colnames)==1 and s_colnames[0]!='id':
+                    s_count,c_count=0,0
+                elif len(s_colnames)>1:
+                    for s in s_colnames:
+                        if s=='id':
+                            s_count,c_count=1,1
+                            break
+                        else:
+                            s_count,c_count=0,0
+            else:
+                break
+        if (i+1)<len(c_data):
+            i=i+1
+            x=0
+            if len(s_colnames)==1 and s_colnames[0]!='id':
                 s_count,c_count=0,0
             elif len(s_colnames)>1:
                 for s in s_colnames:
@@ -245,131 +356,12 @@ def table_content_compare(choose_schema,choose_table,cursor1,cursor2,dbname1,dbn
                         break
                     else:
                         s_count,c_count=0,0
-
-            while x<len(s_data):
-                while i<len(c_data):
-                    while s_count<len(s_colnames) and c_count<len(c_colnames):
-                        if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)<len(s_colnames):
-                            s_count=s_count+1
-                            c_count=1
-                        elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)>=len(s_colnames):
-                            break
-                        elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count]:
-                            if (i+1)<len(c_data):
-                                break
-                            else:
-                                sign=sign+1
-                                print('\nFor database %r, there is no matching record: %r'%(dbname2,s_data[x]))
-                                break
-                        else:
-                            c_count=c_count+1
-                    if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (s_count+1)>=len(s_colnames):
-                        break
-                    elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (i+1)>=len(c_data):
-                        break
-                    elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (i+1)<len(c_data):
-                        i=i+1
-                        if len(s_colnames)==1 and s_colnames[0]!='id':
-                            s_count,c_count=0,0
-                        elif len(s_colnames)>1:
-                            for s in s_colnames:
-                                if s=='id':
-                                    s_count,c_count=1,1
-                                    break
-                                else:
-                                    s_count,c_count=0,0
-                    else:
-                        break
-                if (x+1)<len(s_data):
-                    x=x+1
-                    i=0
-                    if len(s_colnames)==1 and s_colnames[0]!='id':
-                        s_count,c_count=0,0
-                    elif len(s_colnames)>1:
-                        for s in s_colnames:
-                            if s=='id':
-                                s_count,c_count=1,1
-                                break
-                            else:
-                                s_count,c_count=0,0
-                else:
-                    if sign==0:
-                        print('\nFor database %r, those two tables might be matching'%dbname1)
-                        break
-                    else:
-                        break
-            
-            x,i=0,0
-            
-            if len(s_colnames)==1 and s_colnames[0]=='id':
-                sign=sign+1
-                print('\nThe table \'%s.%s\' only has one column'%(choose_schema,choose_table))
+        else:
+            if sign==0:
+                print('\nFor database %r, those two tables might be matching'%dbname2)
                 break
-            elif len(s_colnames)==1 and s_colnames[0]!='id':
-                s_count,c_count=0,0
-            elif len(s_colnames)>1:
-                for s in s_colnames:
-                    if s=='id':
-                        s_count,c_count=1,1
-                        break
-                    else:
-                        s_count,c_count=0,0
-                        
-            while i<len(c_data):
-                while x<len(s_data):
-                    while s_count<len(s_colnames) and c_count<len(c_colnames):
-                        if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)<len(c_colnames):
-                            c_count=c_count+1
-                            s_count=1
-                        elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)>=len(c_colnames):
-                            break
-                        elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count]:
-                            if (x+1)<len(s_data):
-                                break
-                            else:
-                                sign=sign+1
-                                print('\nFor database %r, there is no matching record: %r'%(dbname1,c_data[i]))
-                                break
-                        else:
-                            s_count=s_count+1
-                    if s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]==c_data[i][c_count] and (c_count+1)>=len(c_colnames):
-                        break
-                    elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (x+1)>=len(s_data):
-                        break
-                    elif s_colnames[s_count]==c_colnames[c_count] and s_data[x][s_count]!=c_data[i][c_count] and (x+1)<len(s_data):
-                        x=x+1
-                        if len(s_colnames)==1 and s_colnames[0]!='id':
-                            s_count,c_count=0,0
-                        elif len(s_colnames)>1:
-                            for s in s_colnames:
-                                if s=='id':
-                                    s_count,c_count=1,1
-                                    break
-                                else:
-                                    s_count,c_count=0,0
-                    else:
-                        break
-                if (i+1)<len(c_data):
-                    i=i+1
-                    x=0
-                    if len(s_colnames)==1 and s_colnames[0]!='id':
-                        s_count,c_count=0,0
-                    elif len(s_colnames)>1:
-                        for s in s_colnames:
-                            if s=='id':
-                                s_count,c_count=1,1
-                                break
-                            else:
-                                s_count,c_count=0,0
-                else:
-                    if sign==0:
-                        print('\nFor database %r, those two tables might be matching'%dbname2)
-                        break
-                    else:
-                        break
-
-            break
-        break
+            else:
+                break
     
     if sign==0:
         print('\nThe table \'%s.%s\' in those two databases are totally matching'%(choose_schema,choose_table))
@@ -381,7 +373,7 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
     
     count=0
     
-    if ignore_schema!='':
+    if choose_schema=='':
         
         S_schema,judge=database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema)
         
@@ -396,15 +388,13 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
                 count=count+1
                 
             for s_t in S_schema_table:
-                if table_schema_compare(s_s[0],s_t[0],cursor1,cursor2):
-                    continue
-                else:
+                if not table_schema_compare(s_s[0],s_t[0],cursor1,cursor2):
                     count=count+1    
         
         if count==0:
-            print('The schemas of those two databases except schema %r are completely matching\n'%ignore_schema)
+            print('The schemas of those two databases are completely matching\n')
         else:
-            print('The schemas of those two databases except schema %r are not completely matching\n'%ignore_schema)
+            print('The schemas of those two databases are not completely matching\n')
         
     elif choose_schema!='':
         t=[[choose_schema]]
@@ -415,41 +405,13 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
             count=count+1
             
         for s_t in S_schema_table:
-            if table_schema_compare(t,s_t[0],cursor1,cursor2):
-                continue
-            else:
+            if not table_schema_compare(t,s_t[0],cursor1,cursor2):
                 count=count+1
             
         if count==0:
             print('The schema %r of those two databases are completely matching\n'%choose_schema)
         else:
             print('The schema %r of those two databases are not completely matching\n'%choose_schema)
-        
-    elif ignore_schema=='' and choose_schema=='':
-        
-        S_schema,judge=database_structure_check(cursor1,cursor2,dbname1,dbname2)
-        
-        if not judge:
-            count=count+1
-                        
-        for s_s in S_schema:
-            t=[[s_s]]
-            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
-            
-            if not judge:
-                count=count+1
-
-            for s_t in S_schema_table:
-                if table_schema_compare(s_s[0],s_t[0],cursor1,cursor2):
-                    continue
-                else:
-                    count=count+1
-                        
-        if count==0:
-            print('The schemas of those two databases are completely matching\n')
-        else:
-            print('The schemas of those two databases are not completely matching\n')
-
 
         
 def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
@@ -469,56 +431,54 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
 #     else:
 #         print('The number of schemas in those two databases are matching\n')
         
-    while True:
-        while s_schema_number<len(s_schema):
-            while c_schema_number<len(c_schema):
-                if s_schema[s_schema_number]==c_schema[c_schema_number] and (s_schema_number+1)<len(s_schema):
-                    s_schema_number=s_schema_number+1
-                    c_schema_number=0
-                elif s_schema[s_schema_number]==c_schema[c_schema_number] and (s_schema_number+1)>=len(s_schema):
-                    s_schema_number,c_schema_number=0,0
-                    break
-                elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)<len(c_schema):
-                    c_schema_number=c_schema_number+1
-                elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)<len(s_schema):
-                    schema_count=schema_count+1
-                    print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
-#                     s_schema.pop(s_schema_number)
-                    s_schema_number=s_schema_number+1
-                    c_schema_number=0
-                elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)>=len(s_schema):
-                    schema_count=schema_count+1
-                    print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
-#                     s_schema.pop(s_schema_number)
-                    s_schema_number,c_schema_number=0,0
-                    break
-            break
-        
-        s_schema_number,c_schema_number=0,0
-        
+    while s_schema_number<len(s_schema):
         while c_schema_number<len(c_schema):
-            while s_schema_number<len(s_schema):
-                if c_schema[c_schema_number]==s_schema[s_schema_number] and (c_schema_number+1)<len(c_schema):
-                    c_schema_number=c_schema_number+1
-                    s_schema_number=0
-                elif c_schema[c_schema_number]==s_schema[s_schema_number] and (c_schema_number+1)>=len(c_schema):
-                    s_schema_number,c_schema_number=0,0
-                    break
-                elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)<len(s_schema):
-                    s_schema_number=s_schema_number+1
-                elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)<len(c_schema):
-                    schema_count=schema_count+1
-                    print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
-                    c_schema.pop(c_schema_number)
+            if s_schema[s_schema_number]==c_schema[c_schema_number] and (s_schema_number+1)<len(s_schema):
+                s_schema_number=s_schema_number+1
+                c_schema_number=0
+            elif s_schema[s_schema_number]==c_schema[c_schema_number] and (s_schema_number+1)>=len(s_schema):
+                s_schema_number,c_schema_number=0,0
+                break
+            elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)<len(c_schema):
+                c_schema_number=c_schema_number+1
+            elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)<len(s_schema):
+                schema_count=schema_count+1
+                print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
+#                     s_schema.pop(s_schema_number)
+                s_schema_number=s_schema_number+1
+                c_schema_number=0
+            elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)>=len(s_schema):
+                schema_count=schema_count+1
+                print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
+#                     s_schema.pop(s_schema_number)
+                s_schema_number,c_schema_number=0,0
+                break
+        break
+    
+    s_schema_number,c_schema_number=0,0
+    
+    while c_schema_number<len(c_schema):
+        while s_schema_number<len(s_schema):
+            if c_schema[c_schema_number]==s_schema[s_schema_number] and (c_schema_number+1)<len(c_schema):
+                c_schema_number=c_schema_number+1
+                s_schema_number=0
+            elif c_schema[c_schema_number]==s_schema[s_schema_number] and (c_schema_number+1)>=len(c_schema):
+                s_schema_number,c_schema_number=0,0
+                break
+            elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)<len(s_schema):
+                s_schema_number=s_schema_number+1
+            elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)<len(c_schema):
+                schema_count=schema_count+1
+                print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
+                c_schema.pop(c_schema_number)
 #                     c_schema_number=c_schema_number+1
-                    s_schema_number=0
-                elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)>=len(c_schema):
-                    schema_count=schema_count+1
-                    print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
-                    c_schema.pop(c_schema_number)
-                    s_schema_number,c_schema_number=0,0
-                    break
-            break
+                s_schema_number=0
+            elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)>=len(c_schema):
+                schema_count=schema_count+1
+                print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
+                c_schema.pop(c_schema_number)
+                s_schema_number,c_schema_number=0,0
+                break
         break
         
     if schema_count==0:
@@ -563,64 +523,61 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
 #         else:
 #             print('The number of tables in schema %r are matching \n'%s[0])
             
-        while True:
-            while s_schema_table_number<len(s_schema_table):
-                while c_schema_table_number<len(c_schema_table):
-                    if s_schema_table[s_schema_table_number]==c_schema_table[c_schema_table_number] and (s_schema_table_number+1)<len(s_schema_table):
-                        s_schema_table_number=s_schema_table_number+1
-                        c_schema_table_number=0
-                    elif s_schema_table[s_schema_table_number]==c_schema_table[c_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table):
-                        s_schema_table_number,c_schema_table_number=0,0
-                        break
-                    elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)<len(c_schema_table):
-                        c_schema_table_number=c_schema_table_number+1
-                    elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)<len(s_schema_table):
-                        schema_table_count=schema_table_count+1
-                        print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
-#                         s_schema_table.pop(s_schema_table_number)
-                        s_schema_table_number=s_schema_table_number+1
-                        c_schema_table_number=0
-                    elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)>=len(s_schema_table):
-                        schema_table_count=schema_table_count+1
-                        print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
-#                         s_schema_table.pop(s_schema_table_number)
-                        s_schema_table_number,c_schema_table_number=0,0
-                        break
-                break
-            s_schema_table_number,c_schema_table_number=0,0
-            
+        while s_schema_table_number<len(s_schema_table):
             while c_schema_table_number<len(c_schema_table):
-                while s_schema_table_number<len(s_schema_table):
-                    if c_schema_table[c_schema_table_number]==s_schema_table[s_schema_table_number] and (c_schema_table_number+1)<len(c_schema_table):
-                        c_schema_table_number=c_schema_table_number+1
-                        s_schema_table_number=0
-                    elif c_schema_table[c_schema_table_number]==s_schema_table[s_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table):
-                        s_schema_table_number,c_schema_table_number=0,0
-                        break
-                    elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)<len(s_schema_table):
-                        s_schema_table_number=s_schema_table_number+1
-                    elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)<len(c_schema_table):
-                        schema_table_count=schema_table_count+1
-                        print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
-                        c_schema_table.pop(c_schema_table_number)
-#                         c_schema_table_number=c_schema_table_number+1
-                        s_schema_table_number=0
-                    elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)>=len(c_schema_table):
-                        schema_table_count=schema_table_count+1
-                        print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
-                        c_schema_table.pop(c_schema_table_number)
-                        s_schema_table_number,c_schema_table_number=0,0
-                        break
-                if schema_table_count!=0:
-                    count=count+1
+                if s_schema_table[s_schema_table_number]==c_schema_table[c_schema_table_number] and (s_schema_table_number+1)<len(s_schema_table):
+                    s_schema_table_number=s_schema_table_number+1
+                    c_schema_table_number=0
+                elif s_schema_table[s_schema_table_number]==c_schema_table[c_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table):
+                    s_schema_table_number,c_schema_table_number=0,0
                     break
-                else:
+                elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)<len(c_schema_table):
+                    c_schema_table_number=c_schema_table_number+1
+                elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)<len(s_schema_table):
+                    schema_table_count=schema_table_count+1
+                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
+#                         s_schema_table.pop(s_schema_table_number)
+                    s_schema_table_number=s_schema_table_number+1
+                    c_schema_table_number=0
+                elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)>=len(s_schema_table):
+                    schema_table_count=schema_table_count+1
+                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
+#                         s_schema_table.pop(s_schema_table_number)
+                    s_schema_table_number,c_schema_table_number=0,0
                     break
             break
+        s_schema_table_number,c_schema_table_number=0,0
         
-    
+        while c_schema_table_number<len(c_schema_table):
+            while s_schema_table_number<len(s_schema_table):
+                if c_schema_table[c_schema_table_number]==s_schema_table[s_schema_table_number] and (c_schema_table_number+1)<len(c_schema_table):
+                    c_schema_table_number=c_schema_table_number+1
+                    s_schema_table_number=0
+                elif c_schema_table[c_schema_table_number]==s_schema_table[s_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table):
+                    s_schema_table_number,c_schema_table_number=0,0
+                    break
+                elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)<len(s_schema_table):
+                    s_schema_table_number=s_schema_table_number+1
+                elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)<len(c_schema_table):
+                    schema_table_count=schema_table_count+1
+                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
+                    c_schema_table.pop(c_schema_table_number)
+#                         c_schema_table_number=c_schema_table_number+1
+                    s_schema_table_number=0
+                elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)>=len(c_schema_table):
+                    schema_table_count=schema_table_count+1
+                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
+                    c_schema_table.pop(c_schema_table_number)
+                    s_schema_table_number,c_schema_table_number=0,0
+                    break
+            if schema_table_count!=0:
+                count=count+1
+                break
+            else:
+                break
+        
     if count==0:
-#         print('The structure of schemas in those two databases are matching\n')
+        print('The structure of schemas in those two databases are matching\n')
         return c_schema_table,True
     else:
         print('The structure of schemas in those two databases are not matching\n')
@@ -656,44 +613,30 @@ def specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_functio
 
 
 def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_schema=''):
+    
     count=0
     
+#     If choose_schema=='' and ignore_schema=='', then we check entire database.
+#     If choose_schema=='' and ignore_schema!='', then we check entire database except specified one schema.
     if choose_schema=='':
         S_schema,judge=database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema)
         
         if not judge:
             count=count+1
             
-        if target=='function':
-            for s_s in S_schema:
-                t=[[s_s]]
-                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
+        for s_s in S_schema:
+            t=[[s_s]]
+            S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
+            
+            if not judge:
+                count=count+1
                 
-                if not judge:
+            for s_t in S_schema_table:
+                if not specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
+                    print('The %r \'%s.%s\' in those two databases are not match\n'%(target,t,s_t[0]))
                     count=count+1
-                
-                for s_t in S_schema_table:
-                    if specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
-                        continue
-                    else:
-                        print('The function \'%s.%s\' in those two databases are not match\n'%(t,s_t[0]))
-                        count=count+1
-        elif target=='view':
-            for s_s in S_schema:
-                t=[[s_s]]
-                S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
-                
-                if not judge:
-                    count=count+1
-                
-                for s_t in S_schema_table:
-                    if specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
-                        continue
-                    else:
-                        print('The view \'%s.%s\' in those two databases are not match\n'%(t,s_t[0]))
-                        count=count+1
-                    
-#     elif ANOTHER PART
+    
+#     If choose_schema!='', then we check specified one schema.
     elif choose_schema!='':
         t=[[choose_schema]]
         
@@ -703,11 +646,9 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
             count=count+1
             
         for s_t in S_schema_table:
-            if specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
-                continue
-            else:
+            if not specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
+                print('The %r \'%s.%s\' in those two databases are not match\n'%(target,t,s_t[0]))
                 count=count+1
-        
         
     if count==0:
         print('The %r of those two databases are completely matching\n'%target)
