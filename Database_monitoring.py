@@ -37,6 +37,7 @@ def main(argv):
     try:
         opts,args=getopt.getopt(argv,"h:d:p:u:w:H:D:P:U:W:t:s:f:v:S:T:F:V",["host1=", "dbname1=", "port1=", "user1=", "password1=","host2=", "dbname2=", "port2=", "user2=", "password2=","target=","ignore_schema=","ignore_function=","ignore_view=","choose_schema=","choose_table=","choose_function=","choose_view="])
     except getopt.GetoptError:
+        
         sys.exit()
         
     for key,value in opts:
@@ -55,7 +56,10 @@ def main(argv):
             else:
                 user1=value
         if key in ('-w','--password1'):
-            password1=value
+            if value=='':
+                password1=''
+            else:
+                password1=value
         if key in ('-H','--host2'):
             host2=value
         if key in ('-D','--dbname2'):
@@ -71,7 +75,10 @@ def main(argv):
             else:
                 user2=value
         if key in ('-W','--password2'):
-            password2=value
+            if value=='':
+                password2=''
+            else:
+                password2=value
         if key in ('-t','--target'):
             target=value
         if key in ('-s','--ignore_schema'):
@@ -91,6 +98,64 @@ def main(argv):
                 
     connect_db(host1, dbname1, port1, user1, password1,host2, dbname2, port2, user2, password2,target,ignore_schema,ignore_function,ignore_view,choose_schema,choose_table,choose_function,choose_view)
     
+def specified_exist_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_table='',choose_function='',choose_view=''):
+    if choose_table!='':
+        cursor1.execute('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = \'%s\' AND table_name = \'%s\');'%(choose_schema,choose_table))
+        db1=cursor1.fetchone()
+        
+        cursor2.execute('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = \'%s\' AND table_name = \'%s\');'%(choose_schema,choose_table))
+        db2=cursor2.fetchone()
+
+        if  db1[0]==True and db2[0]==True:
+            table_content_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_table)
+        else:
+            if db1[0]==True and db2[0]==False:
+                print('The table \'%s.%s\' can not be found in database %r'%(choose_schema,choose_table,dbname2))
+            elif db2[0]==True and db1[0]==False:
+                print('The table \'%s.%s\' can not be found in database %r'%(choose_schema,choose_table,dbname1))
+            elif db1[0]==False and db2[0]==False:
+                print('The table \'%s.%s\' can not be found in those two databases'%(choose_schema,choose_table))
+                
+    elif choose_function!='':
+        cursor1.execute('select exists(select 1 from information_schema.routines where specific_schema like \'%s\' and routine_name like \'%s\');'%(choose_schema,choose_function))
+        db1=cursor1.fetchone()
+        
+        cursor2.execute('select exists(select 1 from information_schema.routines where specific_schema like \'%s\' and routine_name like \'%s\');'%(choose_schema,choose_function))
+        db2=cursor2.fetchone()
+
+        if  db1[0]==True and db2[0]==True:
+            if specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function=choose_function):
+                print(' * In schema %r, the defination of function %r in those two databases are matching'%(choose_schema,choose_function))
+            else:
+                print(' * In schema %r, the defination of function %r in those two databases are not matching'%(choose_schema,choose_function))
+        else:
+            if db1[0]==True and db2[0]==False:
+                print('The function \'%s.%s\' can not be found in database %r'%(choose_schema,choose_function,dbname2))
+            elif db2[0]==True and db1[0]==False:
+                print('The function \'%s.%s\' can not be found in database %r'%(choose_schema,choose_function,dbname1))
+            elif db1[0]==False and db2[0]==False:
+                print('The function \'%s.%s\' can not be found in those two databases'%(choose_schema,choose_function))
+
+    elif choose_view!='':
+        cursor1.execute('select exists(select 1 from pg_views where schemaname=\'%s\' and viewname=\'%s\');'%(choose_schema,choose_view))
+        db1=cursor1.fetchone()
+        
+        cursor2.execute('select exists(select 1 from pg_views where schemaname=\'%s\' and viewname=\'%s\');'%(choose_schema,choose_view))
+        db2=cursor2.fetchone()
+
+        if  db1[0]==True and db2[0]==True:
+            if specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function=choose_function):
+                print(' * In schema %r, the defination of view %r in those two databases are matching'%(choose_schema,choose_view))
+            else:
+                print(' * In schema %r, the defination of view %r in those two databases are not matching'%(choose_schema,choose_view))
+        else:
+            if db1[0]==True and db2[0]==False:
+                print('The view \'%s.%s\' can not be found in database %r'%(choose_schema,choose_view,dbname2))
+            elif db2[0]==True and db1[0]==False:
+                print('The view \'%s.%s\' can not be found in database %r'%(choose_schema,choose_view,dbname1))
+            elif db1[0]==False and db2[0]==False:
+                print('The view \'%s.%s\' can not be found in those two databases'%(choose_schema,choose_view))
+
 
 def connect_db(host1, dbname1, port1, user1, password1,host2, dbname2, port2, user2, password2,target,ignore_schema='',ignore_function='',ignore_view='',choose_schema='',choose_table='',choose_function='',choose_view=''):
     
@@ -107,17 +172,14 @@ def connect_db(host1, dbname1, port1, user1, password1,host2, dbname2, port2, us
             database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema=ignore_schema)
         elif choose_schema!='':
             if choose_table!='':
-                table_content_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_table)
+                specified_exist_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_table=choose_table)                    
             else:
                 database_schema_check(target,cursor1,cursor2,dbname1,dbname2,choose_schema=choose_schema)
         else:
             database_schema_check(target,cursor1,cursor2,dbname1,dbname2)
     elif target=='function':
         if choose_schema!='' and choose_function!='':
-            if specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function=choose_function):
-                print('In schema %r, the defination of function %r in those two databases are matching'%(choose_schema,choose_function))
-            else:
-                print('In schema %r, the defination of function %r in those two databases are not matching'%(choose_schema,choose_function))
+            specified_exist_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_function=choose_function)
         elif choose_schema!='' and choose_function=='':
             entire_check(target,cursor1,cursor2,dbname1,dbname2,choose_schema=choose_schema)
         elif ignore_schema!='':
@@ -126,10 +188,7 @@ def connect_db(host1, dbname1, port1, user1, password1,host2, dbname2, port2, us
             entire_check(target,cursor1,cursor2,dbname1,dbname2)
     elif target=='view':
         if choose_schema!='' and choose_view!='':
-            if specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_view=choose_view):
-                print('In schema %r, the defination of function %r in those two databases are matching'%(choose_schema,choose_function))
-            else:
-                print('In schema %r, the defination of function %r in those two databases are not matching'%(choose_schema,choose_function))
+            specified_exist_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_view=choose_view)
         elif choose_schema!='' and choose_view=='':
             entire_check(target,cursor1,cursor2,dbname1,dbname2,choose_schema=choose_schema)
         elif ignore_schema!='':
@@ -142,9 +201,10 @@ def connect_db(host1, dbname1, port1, user1, password1,host2, dbname2, port2, us
 def table_content_check(dbname1,cursor1,dbname2,cursor2,choose_schema,choose_table):
         
     if not table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
-        print('Due to the different table schema in \'%s.%s\', we cannot process the content check\n'%(choose_schema,choose_table))
+        print(' *** Due to the different table schema in \'%s.%s\', we cannot process the content check\n'%(choose_schema,choose_table))
     else:
         table_content_compare(choose_schema,choose_table,cursor1,cursor2,dbname1,dbname2)
+        
         
 def table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
     
@@ -164,7 +224,7 @@ def table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
     x,i,count,sign=0,0,0,0
      
     if c_columns!=s_columns:
-        print('In table \'%s.%s\', the number of columns are not match!\n'%(choose_schema,choose_table))
+        print(' ** In table \'%s.%s\', the number of columns are not match!\n'%(choose_schema,choose_table))
     
     while x<len(s_columns_infor):
         while i<len(c_columns_infor):
@@ -185,14 +245,14 @@ def table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
 #                             print('The schema of table \'%s.%s\' in those two databases are completely matching\n'%(choose_schema,choose_table))
                         return True
                     else:
-                        print('The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
+                        print(' * The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
                         return False
             elif s_columns_infor[x][count]!=c_columns_infor[i][count]:
                 if (i+1)<len(c_columns_infor):
                     i=i+1
                     count=0
                 else:
-                    print('There is no match column ',s_columns_infor[x],' in table \'%s.%s\'\n'%(choose_schema,choose_table))
+                    print(' * There is no match column ',s_columns_infor[x],' in table \'%s.%s\'\n'%(choose_schema,choose_table))
                     sign=sign+1
                     if (x+1)<len(s_columns_infor):
                         x=x+1
@@ -203,8 +263,9 @@ def table_schema_compare(choose_schema,choose_table,cursor1,cursor2):
 #                                 print('\nThe schema of table \'%s.%s\' in those two databases are completely matching'%(choose_schema,choose_table))
                             return True
                         else:
-                            print('\nThe schema of table \'%s.%s\' in those two databases are not completely matching'%(choose_schema,choose_table))
+                            print(' * The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
                             return False
+                        
 
 def table_content_compare(choose_schema,choose_table,cursor1,cursor2,dbname1,dbname2):
     
@@ -381,7 +442,8 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
             count=count+1
             
         for s_s in S_schema:
-            t=[[s_s]]
+            t=[s_s]
+            
             S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
             
             if not judge:
@@ -392,9 +454,9 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
                     count=count+1    
         
         if count==0:
-            print('The schemas of those two databases are completely matching\n')
+            print(' *** The schema of those two databases are completely matching\n')
         else:
-            print('The schemas of those two databases are not completely matching\n')
+            print(' *** The schema of those two databases are not completely matching\n')
         
     elif choose_schema!='':
         t=[[choose_schema]]
@@ -405,13 +467,13 @@ def database_schema_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='
             count=count+1
             
         for s_t in S_schema_table:
-            if not table_schema_compare(t,s_t[0],cursor1,cursor2):
+            if not table_schema_compare(choose_schema,s_t[0],cursor1,cursor2):
                 count=count+1
             
         if count==0:
-            print('The schema %r of those two databases are completely matching\n'%choose_schema)
+            print(' *** The schema %r of those two databases are completely matching\n'%choose_schema)
         else:
-            print('The schema %r of those two databases are not completely matching\n'%choose_schema)
+            print(' *** The schema %r of those two databases are not completely matching\n'%choose_schema)
 
         
 def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
@@ -427,7 +489,14 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
      
     if len(s_schema)!=len(c_schema):
         schema_count=schema_count+1
-        print('The number of schemas in those two databases are not matching\n')
+        print(' ** The number of schemas in those two databases are not matching\n')
+    if len(s_schema)==0 and len(c_schema)==0:
+        print(' * There is no \'schema\' in those two databases\n')
+    if len(s_schema)==0 and len(c_schema)!=0:
+        print(' * In databses %r, there is no \'schema\'\n'%(dbname1))
+    if len(s_schema)!=0 and len(c_schema)==0:
+        print(' * In database %r, there is no \'schema\'\n'%(dbname2))
+
 #     else:
 #         print('The number of schemas in those two databases are matching\n')
         
@@ -443,13 +512,13 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
                 c_schema_number=c_schema_number+1
             elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)<len(s_schema):
                 schema_count=schema_count+1
-                print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
+                print(' * The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
 #                     s_schema.pop(s_schema_number)
                 s_schema_number=s_schema_number+1
                 c_schema_number=0
             elif s_schema[s_schema_number]!=c_schema[c_schema_number] and (c_schema_number+1)>=len(c_schema) and (s_schema_number+1)>=len(s_schema):
                 schema_count=schema_count+1
-                print('The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
+                print(' * The schema %r can not be found in database %r\n'%(s_schema[s_schema_number],dbname2))
 #                     s_schema.pop(s_schema_number)
                 s_schema_number,c_schema_number=0,0
                 break
@@ -469,30 +538,32 @@ def database_structure_check(cursor1,cursor2,dbname1,dbname2,ignore_schema=''):
                 s_schema_number=s_schema_number+1
             elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)<len(c_schema):
                 schema_count=schema_count+1
-                print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
+                print(' * The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
                 c_schema.pop(c_schema_number)
 #                     c_schema_number=c_schema_number+1
                 s_schema_number=0
             elif c_schema[c_schema_number]!=s_schema[s_schema_number] and (s_schema_number+1)>=len(s_schema) and (c_schema_number+1)>=len(c_schema):
                 schema_count=schema_count+1
-                print('The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
+                print(' * The schema %r can not be found in database %r\n'%(c_schema[c_schema_number],dbname1))
                 c_schema.pop(c_schema_number)
                 s_schema_number,c_schema_number=0,0
                 break
         break
         
     if schema_count==0:
-        print('The schemas of those two databases are matching\n')
+        print(' *** The structure of \'schema\' in those two databases are matching\n')
         return c_schema,True
     else:
-        print('The schemas of those two databases are not matching\n')
+        print(' *** The structure of \'schema\' in those two databases are not matching\n')
         return c_schema,False
+    
 
 def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
     
     s_schema_table_number,c_schema_table_number,schema_table_count,count=0,0,0,0
     
     for s in schema_name:
+#         print('s=',s)
         s_schema_table_number,c_schema_table_number,schema_table_count=0,0,0
         if target=='table':
             cursor1.execute('select tablename as table from pg_tables where schemaname = \'%s\';'%s[0])
@@ -516,10 +587,16 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
             
 #         elif ANOTHER PART
 
-        
         if len(s_schema_table)!=len(c_schema_table):
-            print('The number of tables in schema %r are not matching \n'%s[0])
+            print(' ** The number of %r in schema %r are not matching \n'%(target,s[0]))
             count=count+1
+        if len(s_schema_table)==0 and len(c_schema_table)==0:
+            print(' * In schema %r, there is no %r in those two databases\n'%(s[0],target))
+        if len(s_schema_table)==0 and len(c_schema_table)!=0:
+            print(' * In schema %r, there is no %r in database %r\n'%(s[0],target,dbname1))
+        if len(s_schema_table)!=0 and len(c_schema_table)==0:
+            print(' * In schema %r, there is no %r in database %r\n'%(s[0],target,dbname2))
+
 #         else:
 #             print('The number of tables in schema %r are matching \n'%s[0])
             
@@ -535,13 +612,13 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
                     c_schema_table_number=c_schema_table_number+1
                 elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)<len(s_schema_table):
                     schema_table_count=schema_table_count+1
-                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
+                    print(' * In schema %r database %r, the %s %r can not be found\n'%(s[0],dbname2,target,s_schema_table[s_schema_table_number][0]))
 #                         s_schema_table.pop(s_schema_table_number)
                     s_schema_table_number=s_schema_table_number+1
                     c_schema_table_number=0
                 elif s_schema_table[s_schema_table_number]!=c_schema_table[c_schema_table_number] and (c_schema_table_number+1)>=len(c_schema_table) and (s_schema_table_number+1)>=len(s_schema_table):
                     schema_table_count=schema_table_count+1
-                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname2,s_schema_table[s_schema_table_number][0]))
+                    print(' * In schema %r database %r, the %s %r can not be found\n'%(s[0],dbname2,target,s_schema_table[s_schema_table_number][0]))
 #                         s_schema_table.pop(s_schema_table_number)
                     s_schema_table_number,c_schema_table_number=0,0
                     break
@@ -560,13 +637,13 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
                     s_schema_table_number=s_schema_table_number+1
                 elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)<len(c_schema_table):
                     schema_table_count=schema_table_count+1
-                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
+                    print(' * In schema %r database %r, the %s %r can not be found\n'%(s[0],dbname1,target,c_schema_table[c_schema_table_number][0]))
                     c_schema_table.pop(c_schema_table_number)
 #                         c_schema_table_number=c_schema_table_number+1
                     s_schema_table_number=0
                 elif c_schema_table[c_schema_table_number]!=s_schema_table[s_schema_table_number] and (s_schema_table_number+1)>=len(s_schema_table) and (c_schema_table_number+1)>=len(c_schema_table):
                     schema_table_count=schema_table_count+1
-                    print('In schema %r database %r, the table %r can not be found\n'%(s[0],dbname1,c_schema_table[c_schema_table_number][0]))
+                    print(' * In schema %r database %r, the %s %r can not be found\n'%(s[0],dbname1,target,c_schema_table[c_schema_table_number][0]))
                     c_schema_table.pop(c_schema_table_number)
                     s_schema_table_number,c_schema_table_number=0,0
                     break
@@ -576,12 +653,12 @@ def schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,schema_name):
             else:
                 break
         
-    if count==0:
-        print('The structure of schemas in those two databases are matching\n')
-        return c_schema_table,True
-    else:
-        print('The structure of schemas in those two databases are not matching\n')
-        return c_schema_table,False
+        if count==0:
+            print(' *** The structure of %r in schema %r are matching\n'%(target,s[0]))
+            return c_schema_table,True
+        else:
+            print(' *** The structure of %r in schema %r are not matching\n'%(target,s[0]))
+            return c_schema_table,False
 
 
 def specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function='',choose_view=''):
@@ -602,7 +679,6 @@ def specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_functio
         
 #     elif ANOTHER PART
     
-        
     if specified1==[] or specified2==[]:
         return False
     else:
@@ -625,15 +701,15 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
             count=count+1
             
         for s_s in S_schema:
-            t=[[s_s]]
+            t=[s_s]
             S_schema_table,judge=schema_structure_check(target,cursor1,cursor2,dbname1,dbname2,t)
             
             if not judge:
                 count=count+1
                 
             for s_t in S_schema_table:
-                if not specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
-                    print('The %r \'%s.%s\' in those two databases are not match\n'%(target,t,s_t[0]))
+                if not specified_check(cursor1,cursor2,dbname1,dbname2,s_s[0],choose_function=s_t[0]):
+                    print(' * The %r \'%s.%s\' in those two databases are not match\n'%(target,s_s[0],s_t[0]))
                     count=count+1
     
 #     If choose_schema!='', then we check specified one schema.
@@ -646,16 +722,15 @@ def entire_check(target,cursor1,cursor2,dbname1,dbname2,ignore_schema='',choose_
             count=count+1
             
         for s_t in S_schema_table:
-            if not specified_check(cursor1,cursor2,dbname1,dbname2,t,choose_function=s_t[0]):
-                print('The %r \'%s.%s\' in those two databases are not match\n'%(target,t,s_t[0]))
+            if not specified_check(cursor1,cursor2,dbname1,dbname2,choose_schema,choose_function=s_t[0]):
+                print(' * The %r \'%s.%s\' in those two databases are not match\n'%(target,choose_schema,s_t[0]))
                 count=count+1
         
     if count==0:
-        print('The %r of those two databases are completely matching\n'%target)
+        print(' *** The %r of those two databases are completely matching\n'%target)
     else:
-        print('The %r of those two databases are not completely matching\n'%target)
+        print(' *** The %r of those two databases are not completely matching\n'%target)
            
     
-                                                
 if __name__=='__main__':
     main(sys.argv[1:])
