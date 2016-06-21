@@ -11,7 +11,6 @@ Created on Jun 20, 2016
 __author__ = 'Walter Xiong'
 
 import sys
-import getopt
 import psycopg2
 import argparse
 from difflib import Differ
@@ -397,30 +396,30 @@ class table(base):
                         count=count+1
                      
                 if count==0:
-                    print(' *** In schema %r, the schema of \'table\' in those two databases are completely matching\n'%self.choose_schema)
+                    print(' *** In schema %r, the schema of \'table\' in those two databases are completely matching\n'%s_s)
                 else:
-                    print(' *** In schema %r, the schema of \'table\' in those two databases are not completely matching\n'%self.choose_schema)
+                    print(' *** In schema %r, the schema of \'table\' in those two databases are not completely matching\n'%s_s)
      
     @staticmethod            
     def table_schema_compare(choose_schema,choose_table,cursor1,cursor2,host1,host2,port1,port2,dbname1,dbname2):
         
-        cursor1.execute('select count(*) from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema[0],choose_table))
+        cursor1.execute('select count(*) from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema,choose_table))
         s_columns=cursor1.fetchall()
         
-        cursor1.execute('select column_name,data_type from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema[0],choose_table))
+        cursor1.execute('select column_name,data_type from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema,choose_table))
         s_columns_infor=cursor1.fetchall()
         
-        cursor2.execute('select count(*) from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema[0],choose_table))
+        cursor2.execute('select count(*) from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema,choose_table))
         c_columns=cursor2.fetchall()
         
-        cursor2.execute('select column_name,data_type from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema[0],choose_table))
+        cursor2.execute('select column_name,data_type from information_schema.columns where table_schema=\'%s\' and table_name=\'%s\';'%(choose_schema,choose_table))
         c_columns_infor=cursor2.fetchall()
                 
         x,i,count,sign=0,0,0,0
 
         if c_columns!=s_columns:
             sign=sign+1
-            print(' ** For table \'%s.%s\', the number of columns are not matching in those two databases!\n'%(choose_schema[0],choose_table))
+            print(' ** For table \'%s.%s\', the number of columns are not matching in those two databases!\n'%(choose_schema,choose_table))
         
         while count<len(c_columns_infor[0]):
             if s_columns_infor[x][count]==c_columns_infor[i][count] and (count+1)<len(c_columns_infor[0]):
@@ -437,7 +436,7 @@ class table(base):
                     i=i+1
                     count=0
                 else:
-                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host1,port1,dbname1,choose_schema[0],choose_table),s_columns_infor[x],'\n')
+                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host1,port1,dbname1,choose_schema,choose_table),s_columns_infor[x],'\n')
                     sign=sign+1
                     if (x+1)<len(s_columns_infor):
                         x=x+1
@@ -463,7 +462,7 @@ class table(base):
                     x=x+1
                     count=0
                 else:
-                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host2,port2,dbname2,choose_schema[0],choose_table),c_columns_infor[i],'\n')
+                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host2,port2,dbname2,choose_schema,choose_table),c_columns_infor[i],'\n')
                     sign=sign+1
                     if (i+1)<len(c_columns_infor):
                         i=i+1
@@ -474,7 +473,7 @@ class table(base):
         if sign==0:
             return True
         else:
-            print(' * The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema[0],choose_table))
+            print(' * The schema of table \'%s.%s\' in those two databases are not completely matching\n'%(choose_schema,choose_table))
             return False
 
     def specified_exist_check(self):
@@ -489,31 +488,31 @@ class table(base):
             self.table_content_check()
         else:
             if db1[0]==True and db2[0]==False:
-                print(' * [Host: %s][Port: %s][Database: %s]There is no table \'%s.%s\''%(self.host2,self.port2,self.dbname2,self.choose_schema[0],self.choose_table))
+                print(' * [Host: %s][Port: %s][Database: %s]There is no table \'%s.%s\'\n'%(self.host2,self.port2,self.dbname2,self.choose_schema[0],self.choose_table))
             elif db2[0]==True and db1[0]==False:
-                print(' * [Host: %s][Port: %s][Database: %s]There is no table \'%s.%s\''%(self.host1,self.port1,self.dbname1,self.choose_schema[0],self.choose_table))
+                print(' * [Host: %s][Port: %s][Database: %s]There is no table \'%s.%s\'\n'%(self.host1,self.port1,self.dbname1,self.choose_schema[0],self.choose_table))
             elif db1[0]==False and db2[0]==False:
-                print(' * The table \'%s.%s\' can not be found in those two databases'%(self.choose_schema[0],self.choose_table))
+                print(' * The table \'%s.%s\' can not be found in those two databases\n'%(self.choose_schema[0],self.choose_table))
                 
     def table_content_check(self):
             
-        if not self.table_schema_compare(self.choose_schema,self.choose_table,self.cursor1,self.cursor2,self.host1,self.host2,self.port1,self.port2,self.dbname1,self.dbname2):
+        if not self.table_schema_compare(self.choose_schema[0],self.choose_table,self.cursor1,self.cursor2,self.host1,self.host2,self.port1,self.port2,self.dbname1,self.dbname2):
             print(' *** Due to the different table schema in \'%s.%s\', we cannot process the content check\n'%(self.choose_schema[0],self.choose_table))
         else:
             self.table_content_compare()
             
     def table_content_compare(self):
         
-        self.cursor1.execute('select * from %s.%s'%(self.choose_schema,self.choose_table))
+        self.cursor1.execute('select * from %s.%s'%(self.choose_schema[0],self.choose_table))
         s_colnames = [desc[0] for desc in self.cursor1.description]
         
-        self.cursor1.execute('select * from %s.%s'%(self.choose_schema,self.choose_table))
+        self.cursor1.execute('select * from %s.%s'%(self.choose_schema[0],self.choose_table))
         s_data=self.cursor1.fetchall()
         
-        self.cursor2.execute('select * from %s.%s'%(self.choose_schema,self.choose_table))
+        self.cursor2.execute('select * from %s.%s'%(self.choose_schema[0],self.choose_table))
         c_colnames = [desc[0] for desc in self.cursor2.description]
         
-        self.cursor2.execute('select * from %s.%s'%(self.choose_schema,self.choose_table))
+        self.cursor2.execute('select * from %s.%s'%(self.choose_schema[0],self.choose_table))
         c_data=self.cursor2.fetchall()
     
         
@@ -521,15 +520,15 @@ class table(base):
         
         if len(s_data)!=len(c_data):
             sign=sign+1
-            print('\n ** The number of records in table \'%s.%s\' are not matching'%(self.choose_schema,self.choose_table))
+            print('\n ** The number of records in table \'%s.%s\' are not matching'%(self.choose_schema[0],self.choose_table))
         
         if len(s_colnames)==1 and s_colnames[0]=='id':
             sign=sign+1
-            print('\n * [Host: %s][Port: %s][Database: %s]The table \'%s.%s\' only has one column (id)'%(self.host1,self.port1,self.dbname1,self.choose_schema,self.choose_table))
+            print('\n * [Host: %s][Port: %s][Database: %s]The table \'%s.%s\' only has one column (id)'%(self.host1,self.port1,self.dbname1,self.choose_schema[0],self.choose_table))
             return   
         elif len(c_colnames)==1 and c_colnames[0]=='id':
             sign=sign+1
-            print('\n * [Host: %s][Port: %s][Database: %s]The table \'%s.%s\' only has one column (id)'%(self.host2,self.port2,self.dbname2,self.choose_schema,self.choose_table))
+            print('\n * [Host: %s][Port: %s][Database: %s]The table \'%s.%s\' only has one column (id)'%(self.host2,self.port2,self.dbname2,self.choose_schema[0],self.choose_table))
             return
         else:
             for s in s_colnames:
@@ -670,9 +669,9 @@ class table(base):
                 break
         
         if sign==0:
-            print('\n *** The table \'%s.%s\' in those two databases are totally matching'%(self.choose_schema,self.choose_table))
+            print('\n *** The table \'%s.%s\' in those two databases are totally matching'%(self.choose_schema[0],self.choose_table))
         else:
-            print('\n *** The table \'%s.%s\' in those two databases are not totally matching'%(self.choose_schema,self.choose_table))
+            print('\n *** The table \'%s.%s\' in those two databases are not totally matching'%(self.choose_schema[0],self.choose_table))
     
 class function_view(base):
     
@@ -725,11 +724,11 @@ class function_view(base):
                 for s_t in S_schema_table:
                     if self.target=='function':
                         if not self.specified_check(self.target,self.cursor1,self.cursor2,self.dbname1,self.dbname2,self.host1,self.host2,self.port1,self.port2,s_s[0],choose_function=s_t[0]):
-                            print(' * The %r \'%s.%s\' in those two databases are not match\n'%(self.target,s_s[0],s_t[0]))
+                            print(' * The %r \'%s.%s\' in those two databases are not matching\n'%(self.target,s_s[0],s_t[0]))
                             count=count+1
                     elif self.target=='view':
                         if not self.specified_check(self.target,self.cursor1,self.cursor2,self.dbname1,self.dbname2,self.host1,self.host2,self.port1,self.port2,s_s[0],choose_view=s_t[0]):
-                            print(' * The %r \'%s.%s\' in those two databases are not match\n'%(self.target,s_s[0],s_t[0]))
+                            print(' * The %r \'%s.%s\' in those two databases are not matching\n'%(self.target,s_s[0],s_t[0]))
                             count=count+1
         
     #     If self.choose_schema!='', then we check specified one schema.
@@ -760,11 +759,11 @@ class function_view(base):
                 for s_t in S_schema_table:
                     if self.target=='function':
                         if not self.specified_check(self.target,self.cursor1,self.cursor2,self.dbname1,self.dbname2,self.host1,self.host2,self.port1,self.port2,s_s,choose_function=s_t[0]):
-                            print(' * The %r \'%s.%s\' in those two databases are not match\n'%(self.target,s_s,s_t[0]))
+                            print(' * The %r \'%s.%s\' in those two databases are not matching\n'%(self.target,s_s,s_t[0]))
                             count=count+1
                     elif self.target=='view':
                         if not self.specified_check(self.target,self.cursor1,self.cursor2,self.dbname1,self.dbname2,self.host1,self.host2,self.port1,self.port2,s_s,choose_view=s_t[0]):
-                            print(' * The %r \'%s.%s\' in those two databases are not match\n'%(self.target,s_s,s_t[0]))
+                            print(' * The %r \'%s.%s\' in those two databases are not matching\n'%(self.target,s_s,s_t[0]))
                             count=count+1
                 
         if count==0:
@@ -830,8 +829,6 @@ class function_view(base):
                     print(' * The function \'%s.%s\' can not be found in those two databases\n'%(self.choose_schema[0],self.choose_function))
     
         elif self.choose_view!='':
-            print('self.choose_schema=',self.choose_schema)
-            print('self.choose_view=',self.choose_view)
             self.cursor1.execute('select exists(select 1 from pg_views where schemaname=\'%s\' and viewname=\'%s\');'%(self.choose_schema[0],self.choose_view))
             db1=self.cursor1.fetchone()
             
