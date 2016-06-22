@@ -40,17 +40,105 @@ def main(argv):
 
     args = parser.parse_args()
     
-    host1=args.host1
-    dbname1=args.dbname1
-    port1=args.port1
-    user1=args.user1
-    password1=args.password1
-    host2=args.host2
-    dbname2=args.dbname2
-    port2=args.port2
-    user2=args.user2
-    password2=args.password2
-    target=args.target
+    if args.host1==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--host1\' is missing')
+        print('Suggestion: --host1 127.0.0.1 --dbname1 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        host1=args.host1
+        
+    if args.dbname1==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--dbname1\' is missing')
+        print('Suggestion: --dbname1 database_1 --port1 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        dbname1=args.dbname1
+        
+    if args.port1==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--port1\' is missing')
+        print('Suggestion: --port1 5432 --user1 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        port1=args.port1
+        
+    if args.user1==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--user1\' is missing')
+        print('Suggestion: --user1 postgres --password1 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        user1=args.user1
+        
+    if args.password1==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--password1\' is missing')
+        print('Suggestion: --password1 123 --host2 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        password1=args.password1
+
+    if args.host2==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--host2\' is missing')
+        print('Suggestion: --host2 127.0.0.1 --dbname2 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        host2=args.host2
+        
+    if args.dbname2==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--dbname2\' is missing')
+        print('Suggestion: --dbname2 database_1 --port2 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        dbname2=args.dbname2
+        
+    if args.port2==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--port2\' is missing')
+        print('Suggestion: --port2 5432 --user2 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        port2=args.port2
+        
+    if args.user2==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--user2\' is missing')
+        print('Suggestion: --user2 postgres --password2 ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        user2=args.user2
+        
+    if args.password2==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--password2\' is missing')
+        print('Suggestion: --password2 123 --target ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        password2=args.password2   
+    
+    if args.target==None:
+        print(' ****************** Warning ****************** ')
+        print('Details: \'--target\' is missing')
+        print('Suggestion: --target table ...')
+        print(' ********************************************* ')
+        sys.exit()
+    else:
+        target=args.target
+    
     if args.ignore_schema==None:
         ignore_schema=''
     else:
