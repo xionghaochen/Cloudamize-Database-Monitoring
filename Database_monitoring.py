@@ -1,5 +1,5 @@
 '''
-Created on Jun 20, 2016
+Created on Jun 21, 2016
 
 @author: walter
 '''
@@ -524,7 +524,7 @@ class table(base):
                     i=i+1
                     count=0
                 else:
-                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host1,port1,dbname1,choose_schema,choose_table),s_columns_infor[x],'\n')
+                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column %r\n'%(host1,port1,dbname1,choose_schema,choose_table,s_columns_infor[x]))
                     sign=sign+1
                     if (x+1)<len(s_columns_infor):
                         x=x+1
@@ -550,7 +550,7 @@ class table(base):
                     x=x+1
                     count=0
                 else:
-                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column '%(host2,port2,dbname2,choose_schema,choose_table),c_columns_infor[i],'\n')
+                    print(' * [Host: %s][Port: %s][Database: %s]In table \'%s.%s\', there is no match column %r\n'%(host2,port2,dbname2,choose_schema,choose_table,c_columns_infor[i]))
                     sign=sign+1
                     if (i+1)<len(c_columns_infor):
                         i=i+1
@@ -887,8 +887,8 @@ class function_view(base):
                 return True
             else:
                 print(' * [Type: %s][Name: %s%s]Detail: \n'%(target,choose_function,choose_view))
-                l1=specified1[0][0].splitlines(keepends=True)
-                l2=specified2[0][0].splitlines(keepends=True)
+                l1=specified1[0][0].splitlines(True)
+                l2=specified2[0][0].splitlines(True)
                 dif=list(Differ().compare(l1,l2))
                 print(" ".join(dif))
                 print('')
