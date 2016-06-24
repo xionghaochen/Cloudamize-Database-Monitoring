@@ -7,6 +7,7 @@ Created on Jun 21, 2016
 # -*- coding:utf-8 -*-
 
 ' The first Python project '
+' Validate-DB-Schema-Synchronization '
 
 __author__ = 'Walter Xiong'
 
