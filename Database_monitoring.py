@@ -7,7 +7,7 @@ Created on Jun 21, 2016
 # -*- coding:utf-8 -*-
 
 ' The first Python project '
-' Validate-DB-Schema-Synchronization '
+' Validate DB Schema Synchronization '
 
 __author__ = 'Walter Xiong'
 
@@ -892,7 +892,9 @@ class function_view(base):
                 S_schema_table, judge = self.schema_structure_check(self.target, self.cursor1, self.cursor2,
                                                                     self.dbname1, self.dbname2, self.host1, self.host2,
                                                                     self.port1, self.port2, t)
-
+                
+                S_schema_table=list(set(S_schema_table))
+                
                 if self.ignore_function != '':
                     for i in self.ignore_function:
                         if (i,) in S_schema_table:
@@ -936,6 +938,8 @@ class function_view(base):
                 S_schema_table, judge = self.schema_structure_check(self.target, self.cursor1, self.cursor2,
                                                                     self.dbname1, self.dbname2, self.host1, self.host2,
                                                                     self.port1, self.port2, t)
+                S_schema_table=list(set(S_schema_table))
+                
                 if self.ignore_function != '':
                     for i in self.ignore_function:
                         if (i,) in S_schema_table:
@@ -973,15 +977,17 @@ class function_view(base):
     @staticmethod
     def specified_check(target, cursor1, cursor2, dbname1, dbname2, host1, host2, port1, port2, choose_schema,
                         choose_function='', choose_view=''):
+        
+        s_1,s_2,count=0,0,0
 
         if choose_function != '':
             cursor1.execute(
-                'SELECT routine_definition FROM information_schema.routines WHERE specific_schema LIKE \'%s\' AND routine_name LIKE \'%s\';' % (
+                'SELECT pg_catalog.pg_get_function_identity_arguments(p.oid),pg_get_functiondef(p.oid) FROM pg_catalog.pg_proc p JOIN   pg_catalog.pg_namespace n ON n.oid = p.pronamespace WHERE  n.nspname = \'%s\' AND p.proname ILIKE \'%s\' ORDER  BY 1;' % (
                 choose_schema, choose_function))
             specified1 = cursor1.fetchall()
 
             cursor2.execute(
-                'SELECT routine_definition FROM information_schema.routines WHERE specific_schema LIKE \'%s\' AND routine_name LIKE \'%s\';' % (
+                'SELECT pg_catalog.pg_get_function_identity_arguments(p.oid),pg_get_functiondef(p.oid) FROM pg_catalog.pg_proc p JOIN   pg_catalog.pg_namespace n ON n.oid = p.pronamespace WHERE  n.nspname = \'%s\' AND p.proname ILIKE \'%s\' ORDER  BY 1;' % (
                 choose_schema, choose_function))
             specified2 = cursor2.fetchall()
 
@@ -1002,19 +1008,98 @@ class function_view(base):
             print(' * [Host: %s][Port: %s][Database: %s]There is no %r \'%s.%s%s\'\n' % (
             host2, port2, dbname2, target, choose_schema, choose_view, choose_function))
             return False
-        else:
+        elif choose_view!='':
             str1 = string.replace(specified1[0][0],'\r','')
             str2 = string.replace(specified2[0][0], '\r', '')
             if str1 == str2:
                 return True
             else:
-                print(' * [Type: %s][Name: %s%s]Detail: \n' % (target, choose_function, choose_view))
+                print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_view))
                 l1 = str1.splitlines(True)
                 l2 = str2.splitlines(True)
                 dif = list(Differ().compare(l1, l2))
                 print(" ".join(dif))
                 print('')
                 return False
+        elif choose_function!='':
+            while s_1<len(specified1):
+                if s_2<len(specified2) and specified1[s_1][0]==specified2[s_2][0]:
+                    str1=string.replace(specified1[s_1][1],'\r','')
+                    str2=string.replace(specified2[s_2][1],'\r','')
+                    if str1!=str2:
+                        print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_function))
+                        l1 = str1.splitlines(True)
+                        l2 = str2.splitlines(True)
+                        dif = list(Differ().compare(l1, l2))
+                        print(" ".join(dif))
+                        print('')
+                        count=count+1
+                        specified1.pop(s_1)
+                        specified2.pop(s_2)
+                    else:
+                        specified1.pop(s_1)
+                        specified2.pop(s_2)
+                        
+                    if (s_1+1)<len(specified1):
+                        s_1=s_1+1
+                        s_2=0
+                    else:
+                        break
+                elif s_2<len(specified2) and specified1[s_1][0]!=specified2[s_2][0]:
+                    if (s_2+1)<len(specified2):
+                        s_2=s_2+1
+                    else:
+                        print(' * [Host: %s][Port: %s][Database: %s]There is no %r \'%s.%s(%s)\' \n'% (host2, port2, dbname2, target, choose_schema, choose_function,specified1[s_1][0]) )
+                        count=count+1
+                        specified1.pop(s_1)
+                        if (s_1+1)<len(specified1):
+                            s_1=s_1+1
+                            s_2=0
+                        else:
+                            break
+            s_1,s_2=0,0
+
+            while s_2<len(specified2):
+                if s_1<len(specified1) and specified1[s_1][0]==specified2[s_2][0]:
+                    str1=string.replace(specified1[s_1][1],'\r','')
+                    str2=string.replace(specified2[s_2][1],'\r','')
+                    if str1!=str2:
+                        print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_function))
+                        l1 = str1.splitlines(True)
+                        l2 = str2.splitlines(True)
+                        dif = list(Differ().compare(l1, l2))
+                        print(" ".join(dif))
+                        print('')
+                        count=count+1
+                        specified1.pop(s_1)
+                        specified2.pop(s_2)
+                    else:
+                        specified1.pop(s_1)
+                        specified2.pop(s_2)
+
+                    if (s_2+1)<len(specified2):
+                        s_2=s_2+1
+                        s_1=0
+                    else:
+                        break
+                elif s_1<len(specified1) and specified1[s_1][0]!=specified2[s_2][0]:
+                    if (s_1+1)<len(specified1):
+                        s_1=s_1+1
+                    else:
+                        print(' * [Host: %s][Port: %s][Database: %s]There is no %r \'%s.%s(%s)\' \n'% (host1, port1, dbname1, target, choose_schema, choose_function,specified2[s_2][0]) )
+                        count=count+1
+                        specified2.pop(s_2)
+                        if (s_2+1)<len(specified2):
+                            s_2=s_2+1
+                            s_1=0
+                        else:
+                            break
+
+            if count==0:
+                return True
+            else:
+                return False
+
 
     def specified_exist_check(self):
 
