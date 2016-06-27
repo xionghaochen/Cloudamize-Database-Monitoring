@@ -15,10 +15,14 @@ import sys
 import psycopg2
 import argparse
 import string
+import os
+import shutil
 from difflib import Differ
 
-
 def main(argv):
+    
+    global result
+    
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--host1')
@@ -181,6 +185,20 @@ def main(argv):
         choose_view = ''
     else:
         choose_view = args.choose_view
+        
+#     Create a new directory to store the diff files
+    origin=os.path.abspath('.')
+    
+    result=os.path.join(origin,'__result__')
+    
+    check=[x for x in os.listdir('.') if os.path.isdir(x)]
+    
+    if '__result__' in check:
+        shutil.rmtree(result)
+        os.mkdir(result)
+    else:
+        os.mkdir(result)
+
 
     conn_string1 = "host=%s dbname=%s port=%s user=%s password=%s" % (host1, dbname1, port1, user1, password1)
     conn1 = psycopg2.connect(conn_string1)
@@ -1014,12 +1032,15 @@ class function_view(base):
             if str1 == str2:
                 return True
             else:
-                print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_view))
                 l1 = str1.splitlines(True)
                 l2 = str2.splitlines(True)
                 dif = list(Differ().compare(l1, l2))
-                print(" ".join(dif))
-                print('')
+                view_diff=" ".join(dif)
+                view_file=choose_schema+'_'+choose_view+'.diff'
+                view_path=os.path.join(result,view_file)   
+                with open(view_path,'w') as f:
+                    f.write(view_diff)             
+                print(' * [Type: %s][Schema: %s][Name: %s]Mismatching in those two databases. Detail: %r\n' % (target, choose_schema, choose_view,view_path))
                 return False
         elif choose_function!='':
             while s_1<len(specified1):
@@ -1027,12 +1048,15 @@ class function_view(base):
                     str1=string.replace(specified1[s_1][1],'\r','')
                     str2=string.replace(specified2[s_2][1],'\r','')
                     if str1!=str2:
-                        print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_function))
                         l1 = str1.splitlines(True)
                         l2 = str2.splitlines(True)
                         dif = list(Differ().compare(l1, l2))
-                        print(" ".join(dif))
-                        print('')
+                        function_diff=" ".join(dif)
+                        function_file=choose_schema+'_'+choose_function+'('+specified1[s_1][0]+')'+'.diff'
+                        function_path=os.path.join(result,function_file)
+                        with open(function_path,'w') as f:
+                            f.write(function_diff)
+                        print(' * [Type: %s][Schema: %s][Name: %s]Mismatching in those two databases. Detail: %r\n' % (target, choose_schema, choose_function,function_path))
                         count=count+1
                         specified1.pop(s_1)
                         specified2.pop(s_2)
@@ -1064,12 +1088,15 @@ class function_view(base):
                     str1=string.replace(specified1[s_1][1],'\r','')
                     str2=string.replace(specified2[s_2][1],'\r','')
                     if str1!=str2:
-                        print(' * [Type: %s][Name: %s]Detail: \n' % (target, choose_function))
                         l1 = str1.splitlines(True)
                         l2 = str2.splitlines(True)
                         dif = list(Differ().compare(l1, l2))
-                        print(" ".join(dif))
-                        print('')
+                        function_diff=" ".join(dif)
+                        function_file=choose_schema+'_'+choose_function+'('+specified1[s_1][0]+')'+'.diff'
+                        function_path=os.path.join(result,function_file)
+                        with open(function_path,'w') as f:
+                            f.write(function_diff)
+                        print(' * [Type: %s][Schema: %s][Name: %s]Mismatching in those two databases. Detail: %r\n' % (target, choose_schema, choose_function,function_path))
                         count=count+1
                         specified1.pop(s_1)
                         specified2.pop(s_2)
